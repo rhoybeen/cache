@@ -31,24 +31,16 @@ public class Main {
 
     public static void main(String[] args) {
 
-        ZipfDistribution zipfDistribution = new ZipfDistribution(NUM_OF_MOVIES,0.7);
-        double f = zipfDistribution.probability(40)/zipfDistribution.probability(100);
-        System.out.println(f);
-        System.out.println(zipfDistribution.getNumericalMean() + " "+ zipfDistribution.getNumericalVariance());
-
-        for(int i = 1;i<100;i++){
-            System.out.println(zipfDistribution.probability(i));
-        }
 
         double[] ratios = {0.01,0.02,0.05,0.1,0.15,0.2,0.3,0.5};
-        int[] mul = {1,5,10,15,20};
-        for(int m:mul){
+ //       int[] mul = {1,5,10,15,20};
+
             for(double ratio: ratios){
                 NUM_OF_CDN = 4;
                 CDN.CACHE_NUM = (int) (NUM_OF_MOVIES * ratio);
                 CDN.strategy  = CDN.CACHE_STRATEGY.LFU;
-                CDN.INIT_NUM = CDN.CACHE_NUM * m;
-                c = new CyclicBarrier(NUM_OF_CDN);
+      //          CDN.INIT_NUM = CDN.CACHE_NUM * m;
+                c = new CyclicBarrier(NUM_OF_CDN+1);
                 GateWay gw = new GateWay();
                 CDN cdn1 = new CDN("1","req01.dat",gw);
                 CDN cdn2 = new CDN("2","req02.dat",gw);
@@ -62,6 +54,11 @@ public class Main {
                 Thread thread2 = new Thread(new Client(cdn2,c));
                 Thread thread3 = new Thread(new Client(cdn3,c));
                 Thread thread4 = new Thread(new Client(cdn4,c));
+
+                Thread daemon = new Thread(new Monitor(c,gw));
+                daemon.setDaemon(true);
+                daemon.start();
+
                 thread.start();
                 thread2.start();
                 thread3.start();
@@ -74,8 +71,8 @@ public class Main {
                 calcRedundancy(ratio);
                 //   System.out.println(" ——————————————————————");
             }
-              System.out.println(" ——————————————————————");
-        }
+
+
 
 
     }
@@ -306,25 +303,32 @@ public class Main {
 
 }
 
-class Monitor implements Runnable{
+class Monitor implements Runnable {
+    CyclicBarrier c;
     GateWay gw;
-    Monitor(GateWay gw){
+    Monitor(CyclicBarrier c,GateWay gw){
         this.gw = gw;
+        this.c = c;
     }
 
     @Override
     public void run() {
         while (true){
-            if(gw.re_flag){
-                gw.calcRedundance();
-                gw.re_flag = false;
+            while (c.getNumberWaiting() != Main.NUM_OF_CDN){
+                try {
+                    sleep(1);
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
             }
-            try{
+            gw.updateCache();
+            try {
+                c.await();
                 sleep(1);
+                c.reset();
             }catch (Exception e){
                 e.printStackTrace();
             }
-
         }
     }
 }
@@ -352,13 +356,9 @@ class Client implements Runnable { // 实现了Runnable接口，jdk就知道这�
                 if(cdn.counter>=CDN.UPDATE_PERIOD){
                     cdn.updateCache();
                     cdn.getHitRatio();
-      //              System.out.println(cdn.id+ " is waiting");
-                    c.await();
-      ///              if(cdn.id.equals("1")) cdn.gw.re_flag = true;
-                    sleep(10);
-                    c.reset();
-                }
 
+                    c.await();
+                }
          //       sleep(1);
             }
             cdn.getHitRatioAVG();

@@ -62,4 +62,63 @@ public class GateWay {
             count = 0;
         }
     }
+
+    public synchronized void updateCache(){
+
+        ArrayList<int[]> list = new ArrayList<>();
+
+        for(int i=1;i<=Main.NUM_OF_MOVIES;i++){
+            int[] reqs = new int[Main.NUM_OF_CDN+2];
+            reqs[0] = i;
+            for(int j=0;j<Main.NUM_OF_CDN;j++){
+                int tmp = Integer.MIN_VALUE;
+                for(Map.Entry entry:cdns.entrySet()){
+                    CDN cdn = (CDN) entry.getValue();
+                    int cdn_id = Integer.valueOf(cdn.id);
+                    LFUAgingMap.HitRate hitRate = cdn.lfuAgingMap.km.get(Integer.toString(i));
+                    int hitCount = 0;
+                    if(hitRate!=null)
+                        hitCount = hitRate.hitCount;
+                    reqs[cdn_id]  = hitCount;
+                    tmp = Math.max(tmp,hitCount);
+                }
+                reqs[Main.NUM_OF_CDN+1] = tmp;
+            }
+            list.add(reqs);
+        }
+        Collections.sort(list, new Comparator<int[]>() {
+            @Override
+            public int compare(int[] o1, int[] o2) {
+                return o1[Main.NUM_OF_CDN+1]-o2[Main.NUM_OF_CDN+1];
+            }
+        });
+
+        //clear old cache
+        for(Map.Entry entry:cdns.entrySet()){
+            CDN cdn = (CDN) entry.getValue();
+            cdn.cache.clear();
+        }
+        int[] cache_sizes = new int[Main.NUM_OF_CDN+1];
+        for(int[] arr: list){
+            if(isCacheFull(cache_sizes)) break;
+            for(int i=1;i<=Main.NUM_OF_CDN;i++){
+                if(arr[i]==arr[Main.NUM_OF_CDN]){
+                    cdns.get(String.valueOf(i)).cache.add(String.valueOf(arr[0]));
+                    break;
+                }
+            }
+
+        }
+    }
+
+    public boolean isCacheFull(int[] sizes,int n){
+        return sizes[n] >= CDN.CACHE_NUM;
+    }
+
+    public boolean isCacheFull(int[] sizes){
+        boolean flag = true;
+        for(int i=1;i<sizes.length;i++)
+            flag &= isCacheFull(sizes,i);
+        return flag;
+    }
 }
