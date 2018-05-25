@@ -17,6 +17,8 @@ public class CDN {
     public static int INIT_NUM = Main.NUM_OF_REQUESTS/200;
     public static long UPDATE_PERIOD = 20000;
 
+    public static int NATIVE_COST = 20;
+
     //LFU
     public LFUAgingMap<String,Integer> lfuAgingMap;
 
@@ -278,6 +280,53 @@ public class CDN {
         }catch (Exception e){
             e.printStackTrace();
         }
+    }
+
+    public void adjustRedundancy(HashMap<String,Integer> tmpCache,int[][] graph){
+        SrcFile[]  candidates = new SrcFile[cache.size()];
+
+        Iterator<String> iterator = cache.iterator();
+        int i = 0;
+        while (iterator.hasNext() && i<cache.size()){
+            String tmp = iterator.next();
+            candidates[i++] = new SrcFile(tmp,lfuAgingMap.getHitCount(tmp));
+        }
+
+        Arrays.sort(candidates);
+        int endPointer = candidates.length-1;
+
+        List<Map.Entry<String, LFUAgingMap.HitRate>> list = lfuAgingMap.sortMapByValue();
+        int cnt = 0;
+        for(Map.Entry entry:list){
+            if(cnt>=CACHE_NUM) break;
+            String v_id = (String)entry.getKey();
+            if(cache.contains(v_id)) continue;
+            else {
+                String u_id = candidates[endPointer].getId();
+                double local_hit_gain_v = fGain(lfuAgingMap.km.get(v_id).hitCount,graph,Integer.valueOf(id),Integer.valueOf(v_id));
+                double outer_hit_gain_v = fGain(lfuAgingMap.km.get(v_id).hitCount,graph,Integer.valueOf(id),tmpCache.get(v_id));
+                double loss_u = 0.0;
+                for(int k=1;k<=Main.NUM_OF_CDN;k++){
+                    int hc = gw.cdns.get(Integer.toString(i)).lfuAgingMap.getHitCount(v_id);
+                    loss_u += fGain(hc,graph,k,Integer.valueOf(id));
+                }
+                if(local_hit_gain_v-outer_hit_gain_v >= loss_u){
+                    // replace the old cache
+                    cache.add(v_id);
+                    cache.remove(u_id);
+                }else {
+
+                }
+            }
+
+        }
+    }
+
+    public double fGain(int hitCount,int[][] graph,int native_id,int hit_id){
+        int outer_cost = graph[native_id][hit_id];
+        double factor = 1.0;
+        double gain = factor*hitCount/(1+outer_cost/NATIVE_COST);
+        return gain;
     }
 
 }

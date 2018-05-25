@@ -31,46 +31,48 @@ public class Main {
 
     public static void main(String[] args) {
 
-
         double[] ratios = {0.01,0.02,0.05,0.1,0.15,0.2,0.3,0.5};
- //       int[] mul = {1,5,10,15,20};
-
-            for(double ratio: ratios){
-                NUM_OF_CDN = 4;
-                CDN.CACHE_NUM = (int) (NUM_OF_MOVIES * ratio);
-                CDN.strategy  = CDN.CACHE_STRATEGY.LFU;
-      //          CDN.INIT_NUM = CDN.CACHE_NUM * m;
-                c = new CyclicBarrier(NUM_OF_CDN+1);
-                GateWay gw = new GateWay();
-                CDN cdn1 = new CDN("1","req01.dat",gw);
-                CDN cdn2 = new CDN("2","req02.dat",gw);
-                CDN cdn3 = new CDN("3","req03.dat",gw);
-                CDN cdn4 = new CDN("4","req04.dat",gw);
-                cdn1.initCache();
-                cdn2.initCache();
-                cdn3.initCache();
-                cdn4.initCache();
-                Thread thread = new Thread(new Client(cdn1,c));
-                Thread thread2 = new Thread(new Client(cdn2,c));
-                Thread thread3 = new Thread(new Client(cdn3,c));
-                Thread thread4 = new Thread(new Client(cdn4,c));
-
-                Thread daemon = new Thread(new Monitor(c,gw));
-                daemon.setDaemon(true);
-                daemon.start();
-
-                thread.start();
-                thread2.start();
-                thread3.start();
-                thread4.start();
-                try{
-                    sleep(2000);
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
-                calcRedundancy(ratio);
-                //   System.out.println(" ——————————————————————");
-            }
+        double[] a = Arrays.copyOfRange(ratios,1,ratios.length-1);
+        System.out.print(a);
+//        double[] ratios = {0.01,0.02,0.05,0.1,0.15,0.2,0.3,0.5};
+// //       int[] mul = {1,5,10,15,20};
+//
+//            for(double ratio: ratios){
+//                NUM_OF_CDN = 4;
+//                CDN.CACHE_NUM = (int) (NUM_OF_MOVIES * ratio);
+//                CDN.strategy  = CDN.CACHE_STRATEGY.LFU;
+//      //          CDN.INIT_NUM = CDN.CACHE_NUM * m;
+//                c = new CyclicBarrier(NUM_OF_CDN+1);
+//                GateWay gw = new GateWay();
+//                CDN cdn1 = new CDN("1","req01.dat",gw);
+//                CDN cdn2 = new CDN("2","req02.dat",gw);
+//                CDN cdn3 = new CDN("3","req03.dat",gw);
+//                CDN cdn4 = new CDN("4","req04.dat",gw);
+//                cdn1.initCache();
+//                cdn2.initCache();
+//                cdn3.initCache();
+//                cdn4.initCache();
+//                Thread thread = new Thread(new Client(cdn1,c));
+//                Thread thread2 = new Thread(new Client(cdn2,c));
+//                Thread thread3 = new Thread(new Client(cdn3,c));
+//                Thread thread4 = new Thread(new Client(cdn4,c));
+//
+//                Thread daemon = new Thread(new Monitor(c,gw));
+//                daemon.setDaemon(true);
+//                daemon.start();
+//
+//                thread.start();
+//                thread2.start();
+//                thread3.start();
+//                thread4.start();
+//                try{
+//                    sleep(2000);
+//                }catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//                calcRedundancy(ratio);
+//                //   System.out.println(" ——————————————————————");
+//            }
 
 
 

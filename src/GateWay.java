@@ -99,16 +99,24 @@ public class GateWay {
             cdn.cache.clear();
         }
         int[] cache_sizes = new int[Main.NUM_OF_CDN+1];
-        for(int[] arr: list){
-            if(isCacheFull(cache_sizes)) break;
-            for(int i=1;i<=Main.NUM_OF_CDN;i++){
-                if(arr[i]==arr[Main.NUM_OF_CDN]){
-                    cdns.get(String.valueOf(i)).cache.add(String.valueOf(arr[0]));
-                    break;
-                }
-            }
+        HashMap<String,Integer> tmp_cache = new HashMap<>();
 
+        for(int[] arr: list){
+
+            if(isCacheFull(cache_sizes)) break;
+            int[] copy = Arrays.copyOfRange(arr,1,arr.length-1);
+            Arrays.sort(copy);
+            int f = 1;
+            int index = Arrays.binarySearch(arr,1,arr.length-1,copy[f]);
+            while(isCacheFull(cache_sizes,index)){
+                f++;
+                index = Arrays.binarySearch(arr,1,arr.length-1,copy[f]);
+            }
+            cache_sizes[index]++;
+            cdns.get(String .valueOf(index)).cache.add(String .valueOf(arr[0]));
+            tmp_cache.put(String .valueOf(arr[0]),index);
         }
+
     }
 
     public boolean isCacheFull(int[] sizes,int n){

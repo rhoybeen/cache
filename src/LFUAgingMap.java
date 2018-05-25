@@ -83,4 +83,9 @@ public class LFUAgingMap<K, V> extends HashMap<K, V> {
         }
     }
 
+    public int getHitCount(String id){
+        HitRate hitRate= km.get(id);
+        return hitRate == null?0:hitRate.hitCount;
+    }
+
 }
