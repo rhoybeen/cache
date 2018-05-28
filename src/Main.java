@@ -23,8 +23,6 @@ public class Main {
     public static int MUL_FACTOR = 100000;
     public static int NUM_OF_CDN = 1;
 
-    public static int dis_nativ = 20;
-    public static int[] dis_others = new int[]{10,15,20,25,30,35,40,45,50,55} ;
 
 
     static CyclicBarrier c = null;
@@ -32,8 +30,8 @@ public class Main {
     public static void main(String[] args) {
 
 
-        double[] ratios = {0.02};
-        int outer_delay = 10;
+        double[] ratios = {0.01,0.02,0.05,0.1,0.15,0.2,0.3};
+        int outer_delay = 5;
  //       int[] mul = {1,5,10,15,20};
 
             for(double ratio: ratios){
@@ -66,11 +64,11 @@ public class Main {
                 thread3.start();
                 thread4.start();
                 try{
-                    sleep(4000);
+                    sleep(1000);
                 }catch (Exception e){
                     e.printStackTrace();
                 }
-                calcRedundancy(ratio);
+         //       calcRedundancy(ratio);
                 //   System.out.println(" ——————————————————————");
             }
 
@@ -328,7 +326,7 @@ class Monitor implements Runnable {
                 c.await();
                 sleep(1);
                 c.reset();
-                System.out.println("reset cyclic barrier");
+      //          System.out.println("reset cyclic barrier");
             }catch (Exception e){
                 e.printStackTrace();
             }

@@ -283,7 +283,7 @@ public class CDN {
         for (double i:gain_rec) sum += i;
         double gain_avg = (double) sum/gain_rec.size();
         DecimalFormat df = new DecimalFormat("0.00");
-        System.out.println( id + "  ends:" + df.format(hit_ratio_avg) + "  "+ df.format(hit_outer_ratio_avg)+"  "+gain_avg);
+        System.out.println(df.format(hit_ratio_avg) + "  "+ df.format(hit_outer_ratio_avg)+"  "+gain_avg);
      //   System.out.println(df.format(hit_outer_ratio_avg));
      //   System.out.println(df.format(hit_ratio_avg));
         return hit_ratio_avg;
