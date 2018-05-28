@@ -31,49 +31,48 @@ public class Main {
 
     public static void main(String[] args) {
 
-        double[] ratios = {0.01,0.02,0.05,0.1,0.15,0.2,0.3,0.5};
-        double[] a = Arrays.copyOfRange(ratios,1,ratios.length-1);
-        System.out.print(a);
-//        double[] ratios = {0.01,0.02,0.05,0.1,0.15,0.2,0.3,0.5};
-// //       int[] mul = {1,5,10,15,20};
-//
-//            for(double ratio: ratios){
-//                NUM_OF_CDN = 4;
-//                CDN.CACHE_NUM = (int) (NUM_OF_MOVIES * ratio);
-//                CDN.strategy  = CDN.CACHE_STRATEGY.LFU;
-//      //          CDN.INIT_NUM = CDN.CACHE_NUM * m;
-//                c = new CyclicBarrier(NUM_OF_CDN+1);
-//                GateWay gw = new GateWay();
-//                CDN cdn1 = new CDN("1","req01.dat",gw);
-//                CDN cdn2 = new CDN("2","req02.dat",gw);
-//                CDN cdn3 = new CDN("3","req03.dat",gw);
-//                CDN cdn4 = new CDN("4","req04.dat",gw);
-//                cdn1.initCache();
-//                cdn2.initCache();
-//                cdn3.initCache();
-//                cdn4.initCache();
-//                gw.generateGraph();
-//                Thread thread = new Thread(new Client(cdn1,c));
-//                Thread thread2 = new Thread(new Client(cdn2,c));
-//                Thread thread3 = new Thread(new Client(cdn3,c));
-//                Thread thread4 = new Thread(new Client(cdn4,c));
-//
-//                Thread daemon = new Thread(new Monitor(c,gw));
-//                daemon.setDaemon(true);
-//                daemon.start();
-//
-//                thread.start();
-//                thread2.start();
-//                thread3.start();
-//                thread4.start();
-//                try{
-//                    sleep(2000);
-//                }catch (Exception e){
-//                    e.printStackTrace();
-//                }
-//                calcRedundancy(ratio);
-//                //   System.out.println(" ——————————————————————");
-//            }
+
+        double[] ratios = {0.02};
+        int outer_delay = 10;
+ //       int[] mul = {1,5,10,15,20};
+
+            for(double ratio: ratios){
+                NUM_OF_CDN = 4;
+                CDN.CACHE_NUM = (int) (NUM_OF_MOVIES * ratio);
+                CDN.strategy  = CDN.CACHE_STRATEGY.LFU;
+      //          CDN.INIT_NUM = CDN.CACHE_NUM * m;
+                c = new CyclicBarrier(NUM_OF_CDN+1);
+                GateWay gw = new GateWay();
+                CDN cdn1 = new CDN("1","req01.dat",gw,10,outer_delay);
+                CDN cdn2 = new CDN("2","req02.dat",gw,10,outer_delay);
+                CDN cdn3 = new CDN("3","req03.dat",gw,10,outer_delay);
+                CDN cdn4 = new CDN("4","req04.dat",gw,10,outer_delay);
+                cdn1.initCache();
+                cdn2.initCache();
+                cdn3.initCache();
+                cdn4.initCache();
+                gw.generateGraph();
+                Thread thread = new Thread(new Client(cdn1,c));
+                Thread thread2 = new Thread(new Client(cdn2,c));
+                Thread thread3 = new Thread(new Client(cdn3,c));
+                Thread thread4 = new Thread(new Client(cdn4,c));
+
+                Thread daemon = new Thread(new Monitor(c,gw));
+                daemon.setDaemon(true);
+                daemon.start();
+
+                thread.start();
+                thread2.start();
+                thread3.start();
+                thread4.start();
+                try{
+                    sleep(4000);
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+                calcRedundancy(ratio);
+                //   System.out.println(" ——————————————————————");
+            }
 
 
 
@@ -120,9 +119,9 @@ public class Main {
                 }
                 double red = (double) tmp / caches[j].length;
                 sum+=red;
-                //     System.out.println("Round "+ String.valueOf(i)+" cdn no " + String.valueOf(j+1)+ "  red is:" +df.format(red));
+                if(j==0)     System.out.println("Round "+ String.valueOf(i)+" cdn no " + String.valueOf(j+1)+ "  red is:" +df.format(red));
             }
-            if(i==9) System.out.println(df.format(sum/NUM_OF_CDN));
+ //           if(i==9) System.out.println(df.format(sum/NUM_OF_CDN));
         }
     }
     public static void generateRequests(){
@@ -329,6 +328,7 @@ class Monitor implements Runnable {
                 c.await();
                 sleep(1);
                 c.reset();
+                System.out.println("reset cyclic barrier");
             }catch (Exception e){
                 e.printStackTrace();
             }
@@ -357,12 +357,12 @@ class Client implements Runnable { // 实现了Runnable接口，jdk就知道这�
                 mov_id = br.readLine();
                 cdn.handleRequest(mov_id);
                 if(cdn.counter>=CDN.UPDATE_PERIOD){
-                    cdn.updateCache();
+            //        cdn.updateCache();
                     cdn.getHitRatio();
-
                     c.await();
+                    sleep(2);
                 }
-         //       sleep(1);
+
             }
             cdn.getHitRatioAVG();
         }catch (Exception e){

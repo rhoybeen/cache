@@ -27,21 +27,24 @@ public class CDN {
     public LRULinkedHashMap<String,Integer> req;
     public HashSet<String> cache;
     public ArrayList<Double> hit_ratio_rec;
-        public ArrayList<Double> hit_outer_ratio_rec;
-        public ArrayList<Integer> handle_outer_rec;
-        public String filename;
+    public ArrayList<Double> hit_outer_ratio_rec;
+    public ArrayList<Double> gain_rec;
+    public ArrayList<Integer> handle_outer_rec;
+    public String filename;
 
-        public long counter;
-        public long hit_counter;
-        public long hit_outer_counter;
-        public long handle_outer_counter;
-        public int cache_update_cnt;
+    public double gain;
+    public long counter;
+    public long hit_counter;
+    public long hit_outer_counter;
+    public long handle_outer_counter;
+    public int cache_update_cnt;
 
-        public String id;
+    public String id;
 
-        public GateWay gw;
-        public int local_delay;
-        public int outer_delay;
+    public GateWay gw;
+    public int local_delay;
+    public int outer_delay;
+
 
     public CDN(String id,String filename,GateWay gw){
             lfuAgingMap = new LFUAgingMap<>(Main.NUM_OF_MOVIES);
@@ -50,6 +53,7 @@ public class CDN {
             hit_ratio_rec = new ArrayList<>();
             hit_outer_ratio_rec = new ArrayList<>();
             handle_outer_rec = new ArrayList<>();
+            gain_rec = new ArrayList<>();
 
             this.filename = filename;
             this.counter = 0;
@@ -131,7 +135,11 @@ public class CDN {
       //      System.out.println("hit online");
             hit_outer_counter++;
         }
-        if(hit != -1) hit_counter++;
+        if(hit != -1){
+            hit_counter++;
+            if(hit == 0) hit = Integer.valueOf(id);
+            gain += fGain(1,gw.graph,Integer.valueOf(id),hit);
+        }
 
         if(strategy == CACHE_STRATEGY.LRU){
             req.put(mov_id,hit);
@@ -249,7 +257,9 @@ public class CDN {
         hit_ratio_rec.add(hit_ratio);
         hit_outer_ratio_rec.add(hit_ratio_outer);
         handle_outer_rec.add((int)handle_outer_counter);
+        gain_rec.add(gain);
 
+        gain = 0.0;
         counter = 0;
         hit_counter = 0;
         hit_outer_counter = 0;
@@ -269,8 +279,11 @@ public class CDN {
         sum = 0;
         for(int i:handle_outer_rec) sum+=i;
         int handle_avg = (int)(sum/handle_outer_rec.size());
+        sum = 0;
+        for (double i:gain_rec) sum += i;
+        double gain_avg = (double) sum/gain_rec.size();
         DecimalFormat df = new DecimalFormat("0.00");
-      //  System.out.println( id + "  ends:" + df.format(hit_ratio_avg) + "  "+ df.format(hit_outer_ratio_avg)+"  "+handle_avg);
+        System.out.println( id + "  ends:" + df.format(hit_ratio_avg) + "  "+ df.format(hit_outer_ratio_avg)+"  "+gain_avg);
      //   System.out.println(df.format(hit_outer_ratio_avg));
      //   System.out.println(df.format(hit_ratio_avg));
         return hit_ratio_avg;
@@ -292,46 +305,48 @@ public class CDN {
 
     public void adjustRedundancy(HashMap<String,Integer> tmpCache,int[][] graph){
 
-        SrcFile[]  candidates = new SrcFile[cache.size()];
-
-        Iterator<String> iterator = cache.iterator();
-        int i = 0;
-        while (iterator.hasNext() && i<cache.size()){
-            String tmp = iterator.next();
-            candidates[i++] = new SrcFile(tmp,lfuAgingMap.getHitCount(tmp));
-        }
-
-        Arrays.sort(candidates);
-        List<Map.Entry<String, LFUAgingMap.HitRate>> list = lfuAgingMap.sortMapByValue();
-
-        int endPointer = candidates.length-1;
-
-        for(int cnt=0;cnt<list.size() && cnt < endPointer;cnt++){
-            Map.Entry entry = list.get(cnt);
-     //       if(cnt>=CACHE_NUM) break;
-            String v_id = (String)entry.getKey();
-            if(cache.contains(v_id)) continue;
-            else {
-                String u_id = candidates[endPointer].getId();
-                double local_hit_gain_v = fGain(lfuAgingMap.km.get(v_id).hitCount,graph,Integer.valueOf(id),Integer.valueOf(v_id));
-                double outer_hit_gain_v = fGain(lfuAgingMap.km.get(v_id).hitCount,graph,Integer.valueOf(id),tmpCache.get(v_id));
-                double loss_u = 0.0;
-                for(int k=1;k<=Main.NUM_OF_CDN;k++){
-                    int hc = gw.cdns.get(Integer.toString(i)).lfuAgingMap.getHitCount(v_id);
-                    loss_u += fGain(hc,graph,k,Integer.valueOf(id));
-                }
-                if(local_hit_gain_v-outer_hit_gain_v >= loss_u){
-                    // replace the old cache
-                    System.out.println(id+" replace cache file from " + u_id +" to " + v_id);
-                    cache.add(v_id);
-                    cache.remove(u_id);
-                    endPointer--;
-                }else {
-
-                }
-            }
-
-        }
+//        SrcFile[]  candidates = new SrcFile[cache.size()];
+//
+//        Iterator<String> iterator = cache.iterator();
+//        int i = 0;
+//        while (iterator.hasNext() && i<cache.size()){
+//            String tmp = iterator.next();
+//            candidates[i++] = new SrcFile(tmp,lfuAgingMap.getHitCount(tmp));
+//        }
+//
+//        Arrays.sort(candidates);
+//        List<Map.Entry<String, LFUAgingMap<String,Integer>.HitRate>> list = lfuAgingMap.sortMapByValue();
+//
+//
+//        int endPointer = candidates.length-1;
+//
+//        for(int cnt=0;cnt<list.size() && cnt < endPointer;cnt++){
+//            Map.Entry entry = list.get(cnt);
+//     //       if(cnt>=CACHE_NUM) break;
+//            String v_id = (String)entry.getKey();
+//            if(cache.contains(v_id)) continue;
+//            else {
+//                String u_id = candidates[endPointer].getId();
+//                double local_hit_gain_v = fGain(lfuAgingMap.km.get(v_id).hitCount,graph,Integer.valueOf(id),Integer.valueOf(id));
+//                double outer_hit_gain_v = fGain(lfuAgingMap.km.get(v_id).hitCount,graph,Integer.valueOf(id),tmpCache.get(v_id));
+//                double loss_u = 0.0;
+//                for(int k=1;k<=Main.NUM_OF_CDN;k++){
+//                    int hc = gw.cdns.get(Integer.toString(k)).lfuAgingMap.getHitCount(u_id);
+//                    loss_u += fGain(hc,graph,k,Integer.valueOf(id));
+//                }
+//                if(local_hit_gain_v-outer_hit_gain_v >= loss_u){
+//                    // replace the old cache
+//                  //  System.out.println(id+" replace cache file from " + u_id +" to " + v_id);
+//                    cache.add(v_id);
+//                    cache.remove(u_id);
+//                    endPointer--;
+//                }else {
+//                 //   System.out.println(id+" keep file uncached " + v_id);
+//                }
+//            }
+//        }
+        cache_update_cnt++;
+        writeCacheToFile(cache);
     }
 
     public double fGain(int hitCount,int[][] graph,int native_id,int hit_id){

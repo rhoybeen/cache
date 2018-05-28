@@ -1,4 +1,6 @@
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 /**
  * Created by WSPN on 2018/5/10.
@@ -34,10 +36,10 @@ public class GateWay {
 
     public synchronized void syncWithCDN(CDN cdn){
         HashSet<String> cache = cdn.cache;
-        this.cache.put(cdn.id,new boolean[Main.NUM_OF_MOVIES+1]);
-        for(String str:cache){
-            int id = Integer.valueOf(str);
-            this.cache.get(cdn.id)[id] = true;
+            this.cache.put(cdn.id,new boolean[Main.NUM_OF_MOVIES+1]);
+            for(String str:cache){
+                int id = Integer.valueOf(str);
+                this.cache.get(cdn.id)[id] = true;
         }
     }
 
@@ -90,7 +92,7 @@ public class GateWay {
         Collections.sort(list, new Comparator<int[]>() {
             @Override
             public int compare(int[] o1, int[] o2) {
-                return o1[Main.NUM_OF_CDN+1]-o2[Main.NUM_OF_CDN+1];
+                return o2[Main.NUM_OF_CDN+1]-o1[Main.NUM_OF_CDN+1];
             }
         });
 
@@ -107,24 +109,52 @@ public class GateWay {
         for(int[] arr: list){
 
             if(isCacheFull(cache_sizes)) break;
-            int[] copy = Arrays.copyOfRange(arr,1,arr.length-1);
-            Arrays.sort(copy);
-            int f = 1;
-            int index = Arrays.binarySearch(arr,1,arr.length-1,copy[f]);
-            while(isCacheFull(cache_sizes,index)){
-                f++;
-                index = Arrays.binarySearch(arr,1,arr.length-1,copy[f]);
+            List<Integer>[] tmp = new ArrayList[Main.NUM_OF_CDN];
+            for(int k=1;k<=Main.NUM_OF_CDN;k++){
+                List l = new ArrayList();
+                l.add(k);
+                l.add(arr[k]);
+                tmp[k-1] = l;
             }
-            cache_sizes[index]++;
-            cdns.get(String .valueOf(index)).cache.add(String .valueOf(arr[0]));
-            tmp_cache.put(String .valueOf(arr[0]),index);
+            Arrays.sort(tmp, new Comparator<List<Integer>>() {
+                @Override
+                public int compare(List<Integer> o1, List<Integer> o2) {
+                    int i1 = (int) o1.get(1);
+                    int i2 = (int) o2.get(1);
+                    return i1-i2;
+                }
+            });
+
+            List index = null;
+            for(List l:tmp){
+                if(!isCacheFull(cache_sizes,(int)l.get(0))){
+                    index = l;
+                    break;
+                }
+            }
+
+//            int[] copy = Arrays.copyOfRange(arr,1,arr.length-1);
+//            Arrays.sort(copy);
+//
+//            int f = copy.length-1;
+//            int index = search(arr,1,arr.length-1,copy[f]);
+//            while(isCacheFull(cache_sizes,index)){
+//                if(--f<0) break;
+//                index = search(arr,1,arr.length-1,copy[f]);
+//            }
+            cache_sizes[(int)index.get(0)]++;
+            cdns.get(String .valueOf(index.get(0))).cache.add(String .valueOf(arr[0]));
+            tmp_cache.put(String .valueOf(arr[0]),(int) index.get(0));
         }
         if(graph == null) generateGraph();
         for(CDN cdn:cdns.values()){
             cdn.adjustRedundancy(tmp_cache,graph);
+            syncWithCDN(cdn);
         }
 
     }
+
+
 
     public boolean isCacheFull(int[] sizes,int n){
         return sizes[n] >= CDN.CACHE_NUM;
@@ -137,6 +167,12 @@ public class GateWay {
         return flag;
     }
 
+    public int search(int[] arr, int from ,int to,int key){
+        for(int i = from;i<to;i++){
+            if(arr[i] == key) return i;
+        }
+        return -1;
+    }
     public boolean generateGraph(){
         int num = Main.NUM_OF_CDN;
         if(cdns.size() != num) return false;
