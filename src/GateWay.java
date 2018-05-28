@@ -8,7 +8,7 @@ public class GateWay {
     public HashMap<String,CDN> cdns;
     public HashMap<String,boolean[]> cache;
     public boolean re_flag = false;
-
+    public int[][] graph;
     public GateWay(){
         cache_set = new HashSet<>();
         cdns = new HashMap<>();
@@ -65,6 +65,7 @@ public class GateWay {
 
     public synchronized void updateCache(){
 
+        //generate L(M)
         ArrayList<int[]> list = new ArrayList<>();
 
         for(int i=1;i<=Main.NUM_OF_MOVIES;i++){
@@ -98,6 +99,8 @@ public class GateWay {
             CDN cdn = (CDN) entry.getValue();
             cdn.cache.clear();
         }
+
+
         int[] cache_sizes = new int[Main.NUM_OF_CDN+1];
         HashMap<String,Integer> tmp_cache = new HashMap<>();
 
@@ -116,6 +119,10 @@ public class GateWay {
             cdns.get(String .valueOf(index)).cache.add(String .valueOf(arr[0]));
             tmp_cache.put(String .valueOf(arr[0]),index);
         }
+        if(graph == null) generateGraph();
+        for(CDN cdn:cdns.values()){
+            cdn.adjustRedundancy(tmp_cache,graph);
+        }
 
     }
 
@@ -128,5 +135,19 @@ public class GateWay {
         for(int i=1;i<sizes.length;i++)
             flag &= isCacheFull(sizes,i);
         return flag;
+    }
+
+    public boolean generateGraph(){
+        int num = Main.NUM_OF_CDN;
+        if(cdns.size() != num) return false;
+        graph = new int[num+1][num+1];
+        for(int i=1;i<=num;i++){
+            for(int j=1;j<=num;j++){
+                int od = cdns.get(Integer.toString(i)).outer_delay + cdns.get(Integer.toString(j)).outer_delay;
+                if(i==j) od = 0;
+                graph[i][j] = od;
+            }
+        }
+        return true;
     }
 }

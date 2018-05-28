@@ -52,6 +52,7 @@ public class Main {
 //                cdn2.initCache();
 //                cdn3.initCache();
 //                cdn4.initCache();
+//                gw.generateGraph();
 //                Thread thread = new Thread(new Client(cdn1,c));
 //                Thread thread2 = new Thread(new Client(cdn2,c));
 //                Thread thread3 = new Thread(new Client(cdn3,c));

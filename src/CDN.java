@@ -40,6 +40,8 @@ public class CDN {
         public String id;
 
         public GateWay gw;
+        public int local_delay;
+        public int outer_delay;
 
     public CDN(String id,String filename,GateWay gw){
             lfuAgingMap = new LFUAgingMap<>(Main.NUM_OF_MOVIES);
@@ -57,8 +59,14 @@ public class CDN {
             this.id = id;
 
             cache_update_cnt = 0;
-        gw.attach(this);
+            gw.attach(this);
 
+    }
+
+    public CDN(String id,String filename,GateWay gw,int local_delay,int outer_delay){
+        this(id,filename,gw);
+        this.local_delay= local_delay;
+        this.outer_delay = outer_delay;
     }
 
     public void initCache(){
@@ -283,6 +291,7 @@ public class CDN {
     }
 
     public void adjustRedundancy(HashMap<String,Integer> tmpCache,int[][] graph){
+
         SrcFile[]  candidates = new SrcFile[cache.size()];
 
         Iterator<String> iterator = cache.iterator();
@@ -293,12 +302,13 @@ public class CDN {
         }
 
         Arrays.sort(candidates);
+        List<Map.Entry<String, LFUAgingMap.HitRate>> list = lfuAgingMap.sortMapByValue();
+
         int endPointer = candidates.length-1;
 
-        List<Map.Entry<String, LFUAgingMap.HitRate>> list = lfuAgingMap.sortMapByValue();
-        int cnt = 0;
-        for(Map.Entry entry:list){
-            if(cnt>=CACHE_NUM) break;
+        for(int cnt=0;cnt<list.size() && cnt < endPointer;cnt++){
+            Map.Entry entry = list.get(cnt);
+     //       if(cnt>=CACHE_NUM) break;
             String v_id = (String)entry.getKey();
             if(cache.contains(v_id)) continue;
             else {
@@ -312,8 +322,10 @@ public class CDN {
                 }
                 if(local_hit_gain_v-outer_hit_gain_v >= loss_u){
                     // replace the old cache
+                    System.out.println(id+" replace cache file from " + u_id +" to " + v_id);
                     cache.add(v_id);
                     cache.remove(u_id);
+                    endPointer--;
                 }else {
 
                 }
@@ -325,7 +337,7 @@ public class CDN {
     public double fGain(int hitCount,int[][] graph,int native_id,int hit_id){
         int outer_cost = graph[native_id][hit_id];
         double factor = 1.0;
-        double gain = factor*hitCount/(1+outer_cost/NATIVE_COST);
+        double gain = factor*hitCount/(1+outer_cost/local_delay);
         return gain;
     }
 
