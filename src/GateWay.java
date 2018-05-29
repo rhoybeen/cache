@@ -9,12 +9,14 @@ public class GateWay {
     public Set<String> cache_set;
     public HashMap<String,CDN> cdns;
     public HashMap<String,boolean[]> cache;
+    public HashMap<String,List<Double>> data;
     public boolean re_flag = false;
     public int[][] graph;
     public GateWay(){
         cache_set = new HashSet<>();
         cdns = new HashMap<>();
         cache = new HashMap<>();
+        data = new HashMap<>();
     }
 
     public synchronized void attach(CDN cdn){

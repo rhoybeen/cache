@@ -14,10 +14,9 @@ public class CDN {
     public static CACHE_STRATEGY strategy = CACHE_STRATEGY.LRU;
     public static double CACHE_RATIO = 0.1;
     public static int CACHE_NUM = (int) (Main.NUM_OF_MOVIES * CACHE_RATIO);
-    public static int INIT_NUM = Main.NUM_OF_REQUESTS/200;
+    public static int INIT_NUM = Main.NUM_OF_REQUESTS/10;
     public static long UPDATE_PERIOD = 20000;
 
-    public static int NATIVE_COST = 20;
 
     //LFU
     public LFUAgingMap<String,Integer> lfuAgingMap;
@@ -137,8 +136,14 @@ public class CDN {
         }
         if(hit != -1){
             hit_counter++;
-            if(hit == 0) hit = Integer.valueOf(id);
-            gain += fGain(1,gw.graph,Integer.valueOf(id),hit);
+//            if(hit == 0) hit = Integer.valueOf(id);
+//            gain += fGain(1,gw.graph,Integer.valueOf(id),hit);
+        }
+
+        switch (hit){
+            case -1:break;
+            case  0: gain += fGain(1,gw.graph,Integer.valueOf(id),Integer.valueOf(id));break;
+            default:gain += fGain(1,gw.graph,Integer.valueOf(id),hit);break;
         }
 
         if(strategy == CACHE_STRATEGY.LRU){
@@ -283,9 +288,14 @@ public class CDN {
         for (double i:gain_rec) sum += i;
         double gain_avg = (double) sum/gain_rec.size();
         DecimalFormat df = new DecimalFormat("0.00");
-    //    System.out.println(df.format(hit_ratio_avg) + "  "+ df.format(hit_outer_ratio_avg)+"  "+gain_avg);
+     //   System.out.println(df.format(hit_ratio_avg) + "  "+ df.format(hit_outer_ratio_avg)+"  "+gain_avg);
      //   System.out.println(df.format(hit_outer_ratio_avg));
      //   System.out.println(df.format(hit_ratio_avg));
+        List<Double> data = new ArrayList<>();
+        data.add(hit_ratio_avg);
+        data.add(hit_outer_ratio_avg);
+        data.add(gain_avg);
+        gw.data.put(id,data);
         return hit_ratio_avg;
     }
 
