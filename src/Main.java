@@ -23,43 +23,45 @@ public class Main {
     public static int MUL_FACTOR = 100000;
     public static int NUM_OF_CDN = 1;
 
+    public static int dis_nativ = 20;
+    public static int[] dis_others = new int[]{10,15,20,25,30,35,40,45,50,55} ;
 
 
     static CyclicBarrier c = null;
 
     public static void main(String[] args) {
 
+        ZipfDistribution zipfDistribution = new ZipfDistribution(NUM_OF_MOVIES,0.7);
+        double f = zipfDistribution.probability(40)/zipfDistribution.probability(100);
+        System.out.println(f);
+        System.out.println(zipfDistribution.getNumericalMean() + " "+ zipfDistribution.getNumericalVariance());
 
-        double[] ratios = {0.01,0.02,0.05,0.1,0.15,0.2,0.3};
-        int[] outer_delay = {0};
- //       int[] mul = {1,5,10,15,20};
-        for(int delay:outer_delay){
-            System.out.println(" ———————————DELAY ———————————"+delay);
+        for(int i = 1;i<100;i++){
+            System.out.println(zipfDistribution.probability(i));
+        }
+
+        double[] ratios = {0.01,0.02,0.05,0.1,0.15,0.2,0.3,0.5};
+        int[] mul = {1,5,10,15,20};
+        for(int m:mul){
             for(double ratio: ratios){
                 NUM_OF_CDN = 4;
                 CDN.CACHE_NUM = (int) (NUM_OF_MOVIES * ratio);
                 CDN.strategy  = CDN.CACHE_STRATEGY.LFU;
-                //          CDN.INIT_NUM = CDN.CACHE_NUM * m;
-                c = new CyclicBarrier(NUM_OF_CDN+1);
+                CDN.INIT_NUM = CDN.CACHE_NUM * m;
+                c = new CyclicBarrier(NUM_OF_CDN);
                 GateWay gw = new GateWay();
-                CDN cdn1 = new CDN("1","req01.dat",gw,10,delay);
-                CDN cdn2 = new CDN("2","req02.dat",gw,10,delay);
-                CDN cdn3 = new CDN("3","req03.dat",gw,10,delay);
-                CDN cdn4 = new CDN("4","req04.dat",gw,10,delay);
+                CDN cdn1 = new CDN("1","req01.dat",gw);
+                CDN cdn2 = new CDN("2","req02.dat",gw);
+                CDN cdn3 = new CDN("3","req03.dat",gw);
+                CDN cdn4 = new CDN("4","req04.dat",gw);
                 cdn1.initCache();
                 cdn2.initCache();
                 cdn3.initCache();
                 cdn4.initCache();
-                gw.generateGraph();
                 Thread thread = new Thread(new Client(cdn1,c));
                 Thread thread2 = new Thread(new Client(cdn2,c));
                 Thread thread3 = new Thread(new Client(cdn3,c));
                 Thread thread4 = new Thread(new Client(cdn4,c));
-
-                Thread daemon = new Thread(new Monitor(c,gw));
-                daemon.setDaemon(true);
-                daemon.start();
-
                 thread.start();
                 thread2.start();
                 thread3.start();
@@ -70,12 +72,10 @@ public class Main {
                     e.printStackTrace();
                 }
                 calcRedundancy(ratio);
-                System.out.println(" ——————————————————————");
+                //   System.out.println(" ——————————————————————");
             }
-
-
+              System.out.println(" ——————————————————————");
         }
-
 
 
     }
@@ -109,25 +109,20 @@ public class Main {
                     for(int y=0;y<NUM_OF_CDN;y++){
                         if(y == j) continue;
                         for(int x = 0;x<caches[y].length;x++){
-                            if(caches[j][z] == caches[y][x] && caches[j][z] != 0){
+                            if(caches[j][z] == caches[y][x] && caches[j][z]!=0){
                                 flag = true;
                                 break;
                             }
                         }
                         if(flag) break;
                     }
-                    if(flag) {
-                        tmp++;
-                    }
-//                    if(flag && i!=0){
-//                        flag = flag;
-//                    }
+                    if(flag) tmp++;
                 }
                 double red = (double) tmp / caches[j].length;
                 sum+=red;
-           //     System.out.println("Round "+ String.valueOf(i)+" cdn no " + String.valueOf(j+1)+ "  red is:" +df.format(red));
+                //     System.out.println("Round "+ String.valueOf(i)+" cdn no " + String.valueOf(j+1)+ "  red is:" +df.format(red));
             }
-             System.out.println(df.format(sum/NUM_OF_CDN));
+            if(i==9) System.out.println(df.format(sum/NUM_OF_CDN));
         }
     }
     public static void generateRequests(){
@@ -311,33 +306,25 @@ public class Main {
 
 }
 
-class Monitor implements Runnable {
-    CyclicBarrier c;
+class Monitor implements Runnable{
     GateWay gw;
-    Monitor(CyclicBarrier c,GateWay gw){
+    Monitor(GateWay gw){
         this.gw = gw;
-        this.c = c;
     }
 
     @Override
     public void run() {
         while (true){
-            while (c.getNumberWaiting() != Main.NUM_OF_CDN){
-                try {
-                    sleep(1);
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
+            if(gw.re_flag){
+                gw.calcRedundance();
+                gw.re_flag = false;
             }
-            gw.updateCache();
-            try {
-                c.await();
+            try{
                 sleep(1);
-                c.reset();
-      //          System.out.println("reset cyclic barrier");
             }catch (Exception e){
                 e.printStackTrace();
             }
+
         }
     }
 }
@@ -363,12 +350,16 @@ class Client implements Runnable { // 实现了Runnable接口，jdk就知道这�
                 mov_id = br.readLine();
                 cdn.handleRequest(mov_id);
                 if(cdn.counter>=CDN.UPDATE_PERIOD){
-            //        cdn.updateCache();
+                    cdn.updateCache();
                     cdn.getHitRatio();
+      //              System.out.println(cdn.id+ " is waiting");
                     c.await();
-                    sleep(2);
+      ///              if(cdn.id.equals("1")) cdn.gw.re_flag = true;
+                    sleep(10);
+                    c.reset();
                 }
 
+         //       sleep(1);
             }
             cdn.getHitRatioAVG();
         }catch (Exception e){
