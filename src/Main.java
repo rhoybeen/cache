@@ -31,20 +31,21 @@ public class Main {
 
 
         double[] ratios = {0.01,0.02,0.05,0.1,0.15,0.2,0.3};
-        int outer_delay = 5;
+        int[] outer_delay = {0};
  //       int[] mul = {1,5,10,15,20};
-
+        for(int delay:outer_delay){
+            System.out.println(" ———————————DELAY ———————————"+delay);
             for(double ratio: ratios){
                 NUM_OF_CDN = 4;
                 CDN.CACHE_NUM = (int) (NUM_OF_MOVIES * ratio);
                 CDN.strategy  = CDN.CACHE_STRATEGY.LFU;
-      //          CDN.INIT_NUM = CDN.CACHE_NUM * m;
+                //          CDN.INIT_NUM = CDN.CACHE_NUM * m;
                 c = new CyclicBarrier(NUM_OF_CDN+1);
                 GateWay gw = new GateWay();
-                CDN cdn1 = new CDN("1","req01.dat",gw,10,outer_delay);
-                CDN cdn2 = new CDN("2","req02.dat",gw,10,outer_delay);
-                CDN cdn3 = new CDN("3","req03.dat",gw,10,outer_delay);
-                CDN cdn4 = new CDN("4","req04.dat",gw,10,outer_delay);
+                CDN cdn1 = new CDN("1","req01.dat",gw,10,delay);
+                CDN cdn2 = new CDN("2","req02.dat",gw,10,delay);
+                CDN cdn3 = new CDN("3","req03.dat",gw,10,delay);
+                CDN cdn4 = new CDN("4","req04.dat",gw,10,delay);
                 cdn1.initCache();
                 cdn2.initCache();
                 cdn3.initCache();
@@ -64,14 +65,16 @@ public class Main {
                 thread3.start();
                 thread4.start();
                 try{
-                    sleep(1000);
+                    sleep(2000);
                 }catch (Exception e){
                     e.printStackTrace();
                 }
-         //       calcRedundancy(ratio);
-                //   System.out.println(" ——————————————————————");
+                calcRedundancy(ratio);
+                System.out.println(" ——————————————————————");
             }
 
+
+        }
 
 
 
@@ -106,20 +109,25 @@ public class Main {
                     for(int y=0;y<NUM_OF_CDN;y++){
                         if(y == j) continue;
                         for(int x = 0;x<caches[y].length;x++){
-                            if(caches[j][z] == caches[y][x]){
+                            if(caches[j][z] == caches[y][x] && caches[j][z] != 0){
                                 flag = true;
                                 break;
                             }
                         }
                         if(flag) break;
                     }
-                    if(flag) tmp++;
+                    if(flag) {
+                        tmp++;
+                    }
+//                    if(flag && i!=0){
+//                        flag = flag;
+//                    }
                 }
                 double red = (double) tmp / caches[j].length;
                 sum+=red;
-                if(j==0)     System.out.println("Round "+ String.valueOf(i)+" cdn no " + String.valueOf(j+1)+ "  red is:" +df.format(red));
+           //     System.out.println("Round "+ String.valueOf(i)+" cdn no " + String.valueOf(j+1)+ "  red is:" +df.format(red));
             }
- //           if(i==9) System.out.println(df.format(sum/NUM_OF_CDN));
+             System.out.println(df.format(sum/NUM_OF_CDN));
         }
     }
     public static void generateRequests(){

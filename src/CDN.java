@@ -283,7 +283,7 @@ public class CDN {
         for (double i:gain_rec) sum += i;
         double gain_avg = (double) sum/gain_rec.size();
         DecimalFormat df = new DecimalFormat("0.00");
-        System.out.println(df.format(hit_ratio_avg) + "  "+ df.format(hit_outer_ratio_avg)+"  "+gain_avg);
+    //    System.out.println(df.format(hit_ratio_avg) + "  "+ df.format(hit_outer_ratio_avg)+"  "+gain_avg);
      //   System.out.println(df.format(hit_outer_ratio_avg));
      //   System.out.println(df.format(hit_ratio_avg));
         return hit_ratio_avg;
@@ -305,46 +305,46 @@ public class CDN {
 
     public void adjustRedundancy(HashMap<String,Integer> tmpCache,int[][] graph){
 
-//        SrcFile[]  candidates = new SrcFile[cache.size()];
-//
-//        Iterator<String> iterator = cache.iterator();
-//        int i = 0;
-//        while (iterator.hasNext() && i<cache.size()){
-//            String tmp = iterator.next();
-//            candidates[i++] = new SrcFile(tmp,lfuAgingMap.getHitCount(tmp));
-//        }
-//
-//        Arrays.sort(candidates);
-//        List<Map.Entry<String, LFUAgingMap<String,Integer>.HitRate>> list = lfuAgingMap.sortMapByValue();
-//
-//
-//        int endPointer = candidates.length-1;
-//
-//        for(int cnt=0;cnt<list.size() && cnt < endPointer;cnt++){
-//            Map.Entry entry = list.get(cnt);
-//     //       if(cnt>=CACHE_NUM) break;
-//            String v_id = (String)entry.getKey();
-//            if(cache.contains(v_id)) continue;
-//            else {
-//                String u_id = candidates[endPointer].getId();
-//                double local_hit_gain_v = fGain(lfuAgingMap.km.get(v_id).hitCount,graph,Integer.valueOf(id),Integer.valueOf(id));
-//                double outer_hit_gain_v = fGain(lfuAgingMap.km.get(v_id).hitCount,graph,Integer.valueOf(id),tmpCache.get(v_id));
-//                double loss_u = 0.0;
-//                for(int k=1;k<=Main.NUM_OF_CDN;k++){
-//                    int hc = gw.cdns.get(Integer.toString(k)).lfuAgingMap.getHitCount(u_id);
-//                    loss_u += fGain(hc,graph,k,Integer.valueOf(id));
-//                }
-//                if(local_hit_gain_v-outer_hit_gain_v >= loss_u){
-//                    // replace the old cache
-//                  //  System.out.println(id+" replace cache file from " + u_id +" to " + v_id);
-//                    cache.add(v_id);
-//                    cache.remove(u_id);
-//                    endPointer--;
-//                }else {
-//                 //   System.out.println(id+" keep file uncached " + v_id);
-//                }
-//            }
-//        }
+        SrcFile[]  candidates = new SrcFile[cache.size()];
+
+        Iterator<String> iterator = cache.iterator();
+        int i = 0;
+        while (iterator.hasNext() && i<cache.size()){
+            String tmp = iterator.next();
+            candidates[i++] = new SrcFile(tmp,lfuAgingMap.getHitCount(tmp));
+        }
+
+        Arrays.sort(candidates);
+        List<Map.Entry<String, LFUAgingMap<String,Integer>.HitRate>> list = lfuAgingMap.sortMapByValue();
+
+
+        int endPointer = candidates.length-1;
+
+        for(int cnt=0;cnt<list.size() && cnt < endPointer;cnt++){
+            Map.Entry entry = list.get(cnt);
+     //       if(cnt>=CACHE_NUM) break;
+            String v_id = (String)entry.getKey();
+            if(cache.contains(v_id)) continue;
+            else {
+                String u_id = candidates[endPointer].getId();
+                double local_hit_gain_v = fGain(lfuAgingMap.km.get(v_id).hitCount,graph,Integer.valueOf(id),Integer.valueOf(id));
+                double outer_hit_gain_v = fGain(lfuAgingMap.km.get(v_id).hitCount,graph,Integer.valueOf(id),tmpCache.get(v_id));
+                double loss_u = 0.0;
+                for(int k=1;k<=Main.NUM_OF_CDN;k++){
+                    int hc = gw.cdns.get(Integer.toString(k)).lfuAgingMap.getHitCount(u_id);
+                    loss_u += fGain(hc,graph,k,Integer.valueOf(id));
+                }
+                if(local_hit_gain_v-outer_hit_gain_v >= loss_u){
+                    // replace the old cache
+                  //  System.out.println(id+" replace cache file from " + u_id +" to " + v_id);
+                    cache.add(v_id);
+                    cache.remove(u_id);
+                    endPointer--;
+                }else {
+                 //   System.out.println(id+" keep file uncached " + v_id);
+                }
+            }
+        }
         cache_update_cnt++;
         writeCacheToFile(cache);
     }

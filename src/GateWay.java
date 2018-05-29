@@ -144,6 +144,9 @@ public class GateWay {
 //            }
             cache_sizes[(int)index.get(0)]++;
             cdns.get(String .valueOf(index.get(0))).cache.add(String .valueOf(arr[0]));
+            if(tmp_cache.get(String .valueOf(arr[0]))!=null){
+                System.out.println(tmp_cache.get(String .valueOf(arr[0]))+"   "+index.get(0));
+            }
             tmp_cache.put(String .valueOf(arr[0]),(int) index.get(0));
         }
         if(graph == null) generateGraph();
